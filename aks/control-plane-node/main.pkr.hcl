@@ -26,8 +26,8 @@ source "azure-arm" "ubuntu" {
   vm_size         = "Standard_DS2_v2"
   os_type         = "Linux"
   image_publisher = "canonical"
-  image_offer     = "0001-com-ubuntu-server-impish"
-  image_sku       = "21_10-gen2"
+  image_offer     = "0001-com-ubuntu-server-focal"
+  image_sku       = "20_04-lts-gen2"
   image_version   = "latest"
 }
 
@@ -36,10 +36,41 @@ build {
 
   provisioner "shell" {
     environment_vars = [
-      "FOO=hello world",
+      "CRIO_OS=xUbuntu_20.04",
+      "CRIO_VER=1.23"
     ]
-    execute_command = "chmod +x {{ .Path }}; {{ .Vars }} sudo -E sh '{{ .Path }}'"
+    #execute_command = "chmod +x {{ .Path }}; {{ .Vars }} sudo -E sh '{{ .Path }}'"
     inline = [
+      #Use the modprobe command to load the overlay and the br_netfilter modules
+      "modprobe overlay",
+      "modprobe br_netfilter",
+      #Apply the /etc/sysctl.d/k8s.conf config file to enable IP forwarding and netfilter settings across reboots
+      "sysctl --system",
+      #Add a new repository for the cri-o software
+      "echo \"deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/$CRIO_VER/$CRIO_OS/ /\" | tee -a /etc/apt/sources.list.d/cri-0.list",
+      #Load the keys for the packages
+      "curl -L http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/$CRIO_VER/$CRIO_OS/Release.key | apt-key add -",
+      #Add the repository for libcontainer information
+      "echo \"deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/$CRIO_OS/ /\" | tee -a /etc/apt/sources.list.d/libcontainers.list",
+      #Add the package key
+      "curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/$CRIO_OS/Release.key | apt-key add -",
+      #Install cri-io and runc
+      "apt-get install -y cri-o cri-o-runc",
+      #Enable cr-io
+      "systemctl daemon-reload",
+      "systemctl enable crio",
+      "systemctl start crio",
+      #Ensure cr-io is running
+      "systemctl status crio",
+      #Add the Kubernetes apt repository
+      "echo \"deb https://apt.kubernetes.io/ kubernetes-xenial main\" | tee -a /etc/apt/sources.list.d/kubernetes.list",
+      #Download the Google Cloud public signing key
+      "curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -",
+      "apt-get install -y kubeadm=1.21.1-00 kubelet=1.21.1-00 kubectl=1.21.1-00",
+      #Don't let these start yet
+      "apt-mark hold kubelet kubeadm kubectl",
+      #- [ apt-mark, hold, kubelet, kubeadm, kubectl ]
+      #Deprovisioning step
       "/usr/sbin/waagent -force -deprovision+user && export HISTSIZE=0 && sync"
     ]
     inline_shebang = "/bin/sh -x"

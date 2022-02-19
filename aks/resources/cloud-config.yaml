@@ -97,43 +97,6 @@ write_files:
     net.bridge.bridge-nf-call-ip6tables = 1
     net.bridge.bridge-nf-call-iptables  = 1
     net.ipv4.ip_forward                 = 1
-#Install Azure CNI plugin
-# - path: /etc/kubeadm/install-cni-plugin.sh
-#   permissions: '0744'
-#   encoding: gzip
-#   content: !!binary |
-#     ${ scripts_install_cni_plugin }
-#Azure CNI network config file. IP 169.254.20.10 represents Azure platform services
-# - path: /etc/cni/net.d/10-azure.conflist
-#   permissions: '0644'
-#   content: |
-#     {
-#       "cniVersion":"0.3.0",
-#       "name":"azure",
-#       "plugins":[
-#           {
-#             "type":"azure-vnet",
-#             "mode":"transparent",
-#             "ipsToRouteViaHost":["169.254.20.10"],
-#             "ipam":{
-#                 "type":"azure-vnet-ipam"
-#             }
-#           },
-#           {
-#             "type":"portmap",
-#             "capabilities":{
-#                 "portMappings":true
-#             },
-#             "snat":true
-#           }
-#       ]
-#     }
-#Azure Cloud Controller Manager Configuration
-# - path: /etc/kubernetes/azure.json
-#   permissions: '0644'
-#   encoding: gzip
-#   content: !!binary |
-#     ${ configs_azure }
 %{ if node_type == "master" ~}
 #Manifests
 #The addon manager will apply the addons to the cluster and maintain their state
@@ -206,29 +169,7 @@ write_files:
     ${ addons_pod_security_policy }
 %{ endif ~}
 runcmd:
-#Set up dependencies
-- [ modprobe, overlay ]
-- [ modprobe, br_netfilter ]
-#Apply the /etc/sysctl.d/k8s.conf config file to enable IP forwarding and netfilter settings across reboots
-- [ sysctl, --system ]
-#Download Docker's official GPG key
-- [ sh, -c, 'curl -s https://download.docker.com/linux/ubuntu/gpg | apt-key add -' ]
-#Set up docker's stable repository
-- [ sh, -c, 'echo deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable > /etc/apt/sources.list.d/docker.list' ]
-#Download the Google Cloud public signing key
-- [ sh, -c, 'curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key add -' ]
-#Add the Kubernetes apt repository:
-- [ sh, -c, 'echo deb https://apt.kubernetes.io/ kubernetes-xenial main > /etc/apt/sources.list.d/kubernetes.list' ]
-- [ apt-get, update ]
-#Install Azure CNI plugin. Plugin is used by containerd, so it must run before containerd starts.
-- [ /etc/kubeadm/install-cni-plugin.sh, v1.2.8, v0.9.1 ]
-#Install packages
-- [ sh, -c, 'apt-get install -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" containerd.io' ]
-- [ apt-get, install, -y, kubelet=1.20.4-00, kubeadm=1.20.4-00, kubectl=1.20.4-00 ]
-- [ apt-mark, hold, kubelet, kubeadm, kubectl ]
-#Install containerd as the container runtime
-- [ mkdir, -p, /etc/containerd ]
-- [ systemctl, restart, containerd ]
+
 %{ if node_type == "master" ~}
 #If this is a master node, grab the certs we need
 - [ mkdir, -p, /etc/kubernetes/pki/etcd ]
