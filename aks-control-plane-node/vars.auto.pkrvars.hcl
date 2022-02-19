@@ -1,7 +1,0 @@
-resource_group                = "rg-images"
-image_name                    = "aks-control-plane-node"
-image_version                 = "0.0.1"
-shared_gallery_resource_group = "rg-images"
-shared_gallery_name           = "cloudruler"
-ssh_user                      = ""
-ssh_pass                      = ""
