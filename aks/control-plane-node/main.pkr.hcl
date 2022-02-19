@@ -48,11 +48,11 @@ build {
       "sysctl --system",
       #Add a new repository for the cri-o software
       "echo \"deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/$CRIO_VER/$CRIO_OS/ /\" | tee -a /etc/apt/sources.list.d/cri-0.list",
-      #Load the keys for the packages
+      #Add the package key for the cri-o software
       "curl -L http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable:/cri-o:/$CRIO_VER/$CRIO_OS/Release.key | apt-key add -",
       #Add the repository for libcontainer information
       "echo \"deb https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/$CRIO_OS/ /\" | tee -a /etc/apt/sources.list.d/libcontainers.list",
-      #Add the package key
+      #Add the package key for libcontainer information
       "curl -L https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/$CRIO_OS/Release.key | apt-key add -",
       #Install cri-io and runc
       "apt-get install -y cri-o cri-o-runc",
