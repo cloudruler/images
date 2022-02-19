@@ -15,13 +15,12 @@ source "azure-arm" "ubuntu" {
   managed_image_resource_group_name = var.resource_group
   managed_image_name                = var.image_name
   shared_image_gallery_destination {
-    subscription        = "2fb80bcc-8430-4b66-868b-8253e48a8317" #var.subscription_id
-    resource_group      = "rg-images" #var.shared_gallery_resource_group
-    gallery_name        = "cloudruler" #var.shared_gallery_name
+    subscription        = var.subscription_id
+    resource_group      = var.shared_gallery_resource_group
+    gallery_name        = var.shared_gallery_name
     image_name          = var.image_name
     image_version       = var.image_version
     replication_regions = [ "South Central US"]
-    #storage_account_type = "Standard_LRS"
   }
   location        = "South Central US"
   vm_size         = "Standard_DS2_v2"
@@ -30,9 +29,6 @@ source "azure-arm" "ubuntu" {
   image_offer     = "0001-com-ubuntu-server-impish"
   image_sku       = "21_10-gen2"
   image_version   = "latest"
-  #ssh_username                      = var.ssh_user
-  #ssh_password                      = var.ssh_pass
-  #ssh_pty                           = "true"
 }
 
 build {
