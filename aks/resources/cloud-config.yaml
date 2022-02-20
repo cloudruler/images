@@ -93,19 +93,7 @@ write_files:
     net.ipv4.ip_forward                 = 1
 %{ if node_type == "master" ~}
 #Manifests
-#The addon manager will apply the addons to the cluster and maintain their state
-# - path: /etc/kubernetes/manifests/kube-addon-manager.yaml
-#   permissions: '0644'
-#   encoding: gzip
-#   content: !!binary |
-#     ${ manifests_kube_addon_manager }
 #Addons
-# - path: /etc/kubernetes/addons/kube-proxy.yaml
-#   permissions: "0644"
-#   encoding: gzip
-#   owner: root
-#   content: !!binary |
-#     ${ "addons_kube_proxy" }
 %{ endif ~}
 runcmd:
 #Set up dependencies
@@ -137,23 +125,10 @@ runcmd:
 %{ if node_type == "master" ~}
 #If this is a master node, grab the certs we need
 - [ mkdir, -p, /etc/kubernetes/pki/etcd ]
-- [ cp, /var/lib/waagent/${certificates["ca-kubernetes"]}.crt, /etc/kubernetes/pki/ca.crt ]
-- [ cp, /var/lib/waagent/${certificates["ca-kubernetes"]}.prv, /etc/kubernetes/pki/ca.key ]
-- [ cp, /var/lib/waagent/${certificates["ca-etcd"]}.crt, /etc/kubernetes/pki/etcd/ca.crt ]
-- [ cp, /var/lib/waagent/${certificates["ca-etcd"]}.prv, /etc/kubernetes/pki/etcd/ca.key ]
-- [ cp, /var/lib/waagent/${certificates["ca-kubernetes-front-proxy"]}.crt, /etc/kubernetes/pki/front-proxy-ca.crt ]
-- [ cp, /var/lib/waagent/${certificates["ca-kubernetes-front-proxy"]}.prv, /etc/kubernetes/pki/front-proxy-ca.key ]
 #Initialize the cluster
 - [ sh, -c, 'kubeadm init --config /etc/kubeadm/config.yaml' ]
 #- [ kubectl, apply, -f https://raw.githubusercontent.com/Azure/acs-engine/master/parts/k8s/addons/kubernetesmasteraddons-azure-npm-daemonset.yaml ]
-- [ mkdir, -p, /home/${admin_username}/.kube ]
-- [ cp, /etc/kubernetes/admin.conf, /home/${admin_username}/.kube/config ]
-- [ chown, '${admin_username}:${admin_username}', /home/${admin_username}/.kube/config ]
 %{ else ~}
 #Join the worker to the cluster
 - [ sh, -c, 'kubeadm join --config /etc/kubeadm/config.yaml']
 %{ endif ~}
-#Set up rules to Source NAT anything not destined for the landing zone vnet CIDR
-#- [ sh, -c, 'iptables -t nat -A POSTROUTING -m iprange ! --dst-range 168.63.129.16 -m addrtype ! --dst-type local ! -d ${vnet_cidr} -j MASQUERADE' ]
-#sudo kubectl apply -f https://raw.githubusercontent.com/Azure/acs-engine/master/parts/k8s/addons/kubernetesmasteraddons-azure-npm-daemonset.yaml
-#kubectl apply -f https://raw.githubusercontent.com/Azure/azure-container-networking/master/npm/azure-npm.yaml
