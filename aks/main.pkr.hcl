@@ -7,21 +7,6 @@ packer {
   }
 }
 
-locals {
-  master_custom_data = base64gzip(templatefile(var.master_custom_data_template, {
-    node_type      = "master"
-    configs_kubeadm = base64gzip(templatefile("../resources/kubeadm/configs/kubeadm-config.yaml", {
-      node_type                    = "master"
-      bootstrap_token              = data.azurerm_key_vault_secret.kv_sc_bootstrap_token.value
-      api_server_name              = var.api_server_name
-      discovery_token_ca_cert_hash = data.azurerm_key_vault_secret.kv_sc_discovery_token_ca_cert_hash.value
-      subnet_cidr                  = var.subnet_cidr
-      k8s_service_subnet           = var.k8s_service_subnet
-      cluster_dns                  = var.cluster_dns
-    }))
-  }))
-}
-
 source "azure-arm" "ubuntu" {
   tenant_id       = var.tenant_id
   subscription_id = var.subscription_id
@@ -44,21 +29,11 @@ source "azure-arm" "ubuntu" {
   image_offer     = "0001-com-ubuntu-server-focal"
   image_sku       = "20_04-lts-gen2"
   image_version   = "latest"
+  user_data_file  = "resources/cloud-config.yaml"
 }
 
 build {
   sources = ["source.azure-arm.ubuntu"]
-
-  provisioner "shell-local" {
-    inline = [
-      "echo not overridden"
-    ]
-    override = {
-      example1 = {
-        inline = ["echo yes overridden"]
-      }
-    }
-  }
 
   provisioner "shell" {
     environment_vars = [
